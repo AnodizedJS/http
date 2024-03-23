@@ -1,15 +1,16 @@
 {
   "name": "@anodized/http",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A decorator driven IoC backend framework aimed at keeping your codebase clean and reducing complexity",
   "type": "module",
   "main": "build/exports.js",
   "scripts": {
+    "build": "npx tsc",
     "test": "npx jest --verbose"
   },
   "repository": {
     "type": "git",
-    "url": "nul"
+    "url": "https://github.com/AnodizedJS/http"
   },
   "keywords": [
     "Anodized",
