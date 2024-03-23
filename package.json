@@ -1,0 +1,41 @@
+{
+  "name": "@anodized/http",
+  "version": "1.0.0",
+  "description": "A decorator driven IoC backend framework aimed at keeping your codebase clean and reducing complexity",
+  "type": "module",
+  "main": "build/exports.js",
+  "scripts": {
+    "test": "npx jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "nul"
+  },
+  "keywords": [
+    "Anodized",
+    "Ioc",
+    "Backend",
+    "Http",
+    "Server",
+    "Decorators",
+    "TypeScript"
+  ],
+  "author": "John Hudson",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.30",
+    "axios": "^1.6.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.3"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.ts"
+    ]
+  }
+}
