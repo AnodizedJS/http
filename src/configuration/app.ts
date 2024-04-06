@@ -1,6 +1,6 @@
 import * as http from 'http';
 import * as https from 'https';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, lstatSync } from 'fs';
 import { getTsFiles, getTsxFiles } from '../framework/utilities';
 import { Memory } from '../framework/memory';
 import { RouteMatchResult, routeMatches } from '../framework/routing';
@@ -99,7 +99,7 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
         {
             for(let dir of appContext.publicDirectories) {
                 const file: string = `${dir}/${req.url.split('?')[0]}`;
-                if (existsSync(file)) {
+                if (existsSync(file) && !lstatSync(file).isDirectory()) {
                     // is a static file, whoo!
 
                     await serveStatic(res, file);
