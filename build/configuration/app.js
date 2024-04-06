@@ -63,7 +63,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import * as http from 'http';
 import * as https from 'https';
 import { readFileSync, existsSync } from 'fs';
-import { getTsFiles } from '../framework/utilities';
+import { getTsFiles, getTsxFiles } from '../framework/utilities';
 import { Memory } from '../framework/memory';
 import { routeMatches } from '../framework/routing';
 import { stringifyResponse } from '../framework/serialize';
@@ -74,10 +74,10 @@ import { parse } from '../framework/parsers';
  */
 export function AnodizedApp(appContext) {
     return __awaiter(this, void 0, void 0, function () {
-        var memory, tsFiles, _i, tsFiles_1, file, handler, handleHttpRequest, nonSecureListener, secureListener;
+        var memory, tsFiles, tsxFiles, _i, tsFiles_1, file, _a, tsxFiles_1, file, handler, handleHttpRequest, nonSecureListener, secureListener;
         var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     // Load the application and check if sourceDirectory is valid and exists.
                     if (appContext.sourceDirectory.length === 0) {
@@ -90,22 +90,39 @@ export function AnodizedApp(appContext) {
                     memory.put('endpoints', []);
                     memory.put('controllers', []);
                     tsFiles = getTsFiles(appContext.sourceDirectory);
+                    tsxFiles = getTsxFiles(appContext.sourceDirectory);
                     _i = 0, tsFiles_1 = tsFiles;
-                    _a.label = 1;
+                    _b.label = 1;
                 case 1:
                     if (!(_i < tsFiles_1.length)) return [3 /*break*/, 4];
                     file = tsFiles_1[_i];
                     if (appContext.verbose) {
-                        console.log("[LOAD] ".concat(file));
+                        console.log("[LOAD (ts)] ".concat(file));
                     }
                     return [4 /*yield*/, import("".concat(process.cwd(), "/").concat(file))];
                 case 2:
-                    _a.sent();
-                    _a.label = 3;
+                    _b.sent();
+                    _b.label = 3;
                 case 3:
                     _i++;
                     return [3 /*break*/, 1];
                 case 4:
+                    _a = 0, tsxFiles_1 = tsxFiles;
+                    _b.label = 5;
+                case 5:
+                    if (!(_a < tsxFiles_1.length)) return [3 /*break*/, 8];
+                    file = tsxFiles_1[_a];
+                    if (appContext.verbose) {
+                        console.log("[LOAD (tsx)] ".concat(file));
+                    }
+                    return [4 /*yield*/, import("".concat(process.cwd(), "/").concat(file))];
+                case 6:
+                    _b.sent();
+                    _b.label = 7;
+                case 7:
+                    _a++;
+                    return [3 /*break*/, 5];
+                case 8:
                     if (appContext.verbose) {
                         console.log("[LOAD] Complete");
                     }

@@ -1,12 +1,3 @@
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 import { readdirSync, lstatSync } from 'fs';
 /**
  * Matches files in a directory and its subdirectories based on a custom matcher function.
@@ -48,7 +39,8 @@ export var getFilesByExtension = function (directory, extension) {
  * @param {string} directory - The directory path to search for TypeScript files.
  * @returns {string[]} An array of TypeScript file paths.
  */
-export var getTsFiles = function (directory) { return __spreadArray(__spreadArray([], getFilesByExtension(directory, '.ts'), true), getFilesByExtension(directory, '.tsx'), true); };
+export var getTsFiles = function (directory) { return getFilesByExtension(directory, '.ts'); };
+export var getTsxFiles = function (directory) { return getFilesByExtension(directory, '.tsx'); };
 /**
  * Gets JavaScript files in a directory.
  * @param {string} directory - The directory path to search for JavaScript files.

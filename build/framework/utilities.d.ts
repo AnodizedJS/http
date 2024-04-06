@@ -18,6 +18,7 @@ export declare const getFilesByExtension: (directory: string, extension: string)
  * @returns {string[]} An array of TypeScript file paths.
  */
 export declare const getTsFiles: (directory: string) => string[];
+export declare const getTsxFiles: (directory: string) => string[];
 /**
  * Gets JavaScript files in a directory.
  * @param {string} directory - The directory path to search for JavaScript files.
