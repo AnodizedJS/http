@@ -37,36 +37,38 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import { createReadStream, readFileSync } from 'fs';
 import { extname } from 'path';
 export var serveStatic = function (response, file) { return __awaiter(void 0, void 0, void 0, function () {
-    var ext, isBinary, stream_1;
     return __generator(this, function (_a) {
-        ext = extname(file);
-        isBinary = false;
-        if ([".png", ".jpeg", ".jpg", ".webp", ".avif", ".gif", ".bmp", ".jiff"].includes(ext)) {
-            response.setHeader('Content-Type', 'image/' + ext.replace('.', ''));
-            isBinary = true;
-        }
-        else if ([".ogg", ".mp4", ".mov", ".flv", ".avi", ".webm"].includes(ext)) {
-            response.setHeader('Content-Type', 'video/' + ext.replace('.', ''));
-            isBinary = true;
-        }
-        else if ([".js", ".json"].includes(ext)) {
-            response.setHeader('Content-Type', 'application/' + ext.replace('.', ''));
-        }
-        else {
-            response.setHeader('Content-Type', 'text/' + ext.replace('.', ''));
-        }
-        if (isBinary) {
-            stream_1 = createReadStream(file);
-            stream_1.on('open', function () {
-                stream_1.pipe(response);
-            });
-            stream_1.on('end', function () {
-                response.end();
-            });
-        }
-        else {
-            response.end(readFileSync(file, 'utf-8'));
-        }
-        return [2 /*return*/];
+        return [2 /*return*/, new Promise(function (resolve, reject) {
+                var ext = extname(file);
+                var isBinary = false;
+                if ([".png", ".jpeg", ".jpg", ".webp", ".avif", ".gif", ".bmp", ".jiff"].includes(ext)) {
+                    response.setHeader('Content-Type', 'image/' + ext.replace('.', ''));
+                    isBinary = true;
+                }
+                else if ([".ogg", ".mp4", ".mov", ".flv", ".avi", ".webm"].includes(ext)) {
+                    response.setHeader('Content-Type', 'video/' + ext.replace('.', ''));
+                    isBinary = true;
+                }
+                else if ([".js", ".json"].includes(ext)) {
+                    response.setHeader('Content-Type', 'application/' + ext.replace('.', ''));
+                }
+                else {
+                    response.setHeader('Content-Type', 'text/' + ext.replace('.', ''));
+                }
+                if (isBinary) {
+                    var stream_1 = createReadStream(file);
+                    stream_1.on('open', function () {
+                        stream_1.pipe(response);
+                    });
+                    stream_1.on('end', function () {
+                        response.end();
+                        resolve();
+                    });
+                }
+                else {
+                    response.end(readFileSync(file, 'utf-8'));
+                    resolve();
+                }
+            })];
     });
 }); };

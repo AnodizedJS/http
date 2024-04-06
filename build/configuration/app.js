@@ -76,7 +76,7 @@ import { extname } from 'path';
  */
 export function AnodizedApp(appContext) {
     return __awaiter(this, void 0, void 0, function () {
-        var memory, tsFiles, tsxFiles, _i, tsFiles_1, file, _a, tsxFiles_1, file, handler, handleHttpRequest, nonSecureListener, secureListener;
+        var memory, tsFiles, tsxFiles, _i, tsFiles_1, file, _a, tsxFiles_1, file, handler, funnelResponse, handleHttpRequest, nonSecureListener, secureListener;
         var _this = this;
         return __generator(this, function (_b) {
             switch (_b.label) {
@@ -172,9 +172,12 @@ export function AnodizedApp(appContext) {
                                     endpoints = memory.get('endpoints');
                                     handled = false;
                                     endpoints.some(function (endpoint) {
-                                        var _a, _b, _c, _d;
+                                        var _a;
                                         var matchResult = routeMatches(endpoint.path, req.url);
                                         if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
+                                            if (appContext.verbose) {
+                                                appContext.logger.log('[REQUEST] ' + endpoint.path);
+                                            }
                                             handled = true;
                                             var classDefinition_1 = endpoint.class;
                                             var classMethod = endpoint.classMethod, consumes = endpoint.consumes;
@@ -194,26 +197,7 @@ export function AnodizedApp(appContext) {
                                             res.setHeader('Content-Type', (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
                                             if (result instanceof Promise) {
                                                 result.then(function (response) {
-                                                    var _a, _b, _c;
-                                                    var toClientBuffer = stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
-                                                    (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
-                                                        if (plugin.onBeforeResponse) {
-                                                            var outputBuffer = plugin.onBeforeResponse({
-                                                                request: req,
-                                                                response: res,
-                                                                outputBuffer: toClientBuffer
-                                                            }).outputBuffer;
-                                                            if (toClientBuffer != outputBuffer) {
-                                                                toClientBuffer = outputBuffer;
-                                                            }
-                                                        }
-                                                    });
-                                                    res.end(toClientBuffer);
-                                                    (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
-                                                        if (plugin.onResponseSent) {
-                                                            plugin.onResponseSent();
-                                                        }
-                                                    });
+                                                    funnelResponse(req, res, response, endpoint);
                                                 })
                                                     .catch(function (reason) {
                                                     appContext.logger.error(reason);
@@ -221,25 +205,7 @@ export function AnodizedApp(appContext) {
                                                 });
                                             }
                                             else {
-                                                var toClientBuffer_1 = stringifyResponse(result, (_b = endpoint.produces) !== null && _b !== void 0 ? _b : 'text/html');
-                                                (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
-                                                    if (plugin.onBeforeResponse) {
-                                                        var outputBuffer = plugin.onBeforeResponse({
-                                                            request: req,
-                                                            response: res,
-                                                            outputBuffer: toClientBuffer_1
-                                                        }).outputBuffer;
-                                                        if (toClientBuffer_1 != outputBuffer) {
-                                                            toClientBuffer_1 = outputBuffer;
-                                                        }
-                                                    }
-                                                });
-                                                res.end(toClientBuffer_1);
-                                                (_d = appContext.plugins) === null || _d === void 0 ? void 0 : _d.forEach(function (plugin) {
-                                                    if (plugin.onResponseSent) {
-                                                        plugin.onResponseSent();
-                                                    }
-                                                });
+                                                funnelResponse(req, res, result, endpoint);
                                             }
                                             return true;
                                         }
@@ -255,6 +221,28 @@ export function AnodizedApp(appContext) {
                             }
                         });
                     }); };
+                    funnelResponse = function (req, res, result, endpoint) {
+                        var _a, _b, _c;
+                        var toClientBuffer = stringifyResponse(result, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
+                        (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
+                            if (plugin.onBeforeResponse) {
+                                var outputBuffer = plugin.onBeforeResponse({
+                                    request: req,
+                                    response: res,
+                                    outputBuffer: toClientBuffer
+                                }).outputBuffer;
+                                if (toClientBuffer != outputBuffer) {
+                                    toClientBuffer = outputBuffer;
+                                }
+                            }
+                        });
+                        res.end(typeof toClientBuffer === 'object' ? toClientBuffer.toString() : toClientBuffer);
+                        (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
+                            if (plugin.onResponseSent) {
+                                plugin.onResponseSent();
+                            }
+                        });
+                    };
                     handleHttpRequest = function (req, res) {
                         if (!req.method) {
                             res.end();

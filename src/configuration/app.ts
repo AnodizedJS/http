@@ -95,6 +95,8 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
      */
     const handler = async (req: http.IncomingMessage, res: http.ServerResponse, body: string): Promise<void> => {
 
+        
+
         if (appContext.publicDirectories) 
         {
             for(let dir of appContext.publicDirectories) {
@@ -126,6 +128,11 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
             const matchResult: RouteMatchResult = routeMatches(endpoint.path, req.url);
 
             if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
+
+                if (appContext.verbose) {
+                    appContext.logger.log('[REQUEST] ' + endpoint.path);
+                }
+
                 handled = true;
                 const classDefinition = endpoint.class;
                 const { classMethod, consumes } = endpoint;
@@ -159,58 +166,14 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
 
                 if (result instanceof Promise) {
                     result.then((response: any) => {
-
-                        let toClientBuffer = stringifyResponse(response, endpoint.produces ?? 'text/html');
-
-                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
-                            if (plugin.onBeforeResponse) {
-                                const { outputBuffer } = plugin.onBeforeResponse({
-                                    request: req, 
-                                    response: res,
-                                    outputBuffer: toClientBuffer
-                                });
-
-                                if (toClientBuffer != outputBuffer) {
-                                    toClientBuffer = outputBuffer;
-                                }
-                            }
-                        });
-
-                        res.end(toClientBuffer);
-
-                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
-                            if (plugin.onResponseSent) {
-                                plugin.onResponseSent();
-                            }
-                        })
+                        funnelResponse(req, res, response, endpoint);
                     })
                     .catch((reason: unknown) => {
                         appContext.logger.error(reason)
                         res.end('<h2>Internal server error</h2>');
                     });
                 } else {
-                        let toClientBuffer = stringifyResponse(result, endpoint.produces ?? 'text/html');
-
-                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
-                            if (plugin.onBeforeResponse) {
-                                const { outputBuffer } = plugin.onBeforeResponse({
-                                    request: req, 
-                                    response: res,
-                                    outputBuffer: toClientBuffer
-                                });
-
-                                if (toClientBuffer != outputBuffer) {
-                                    toClientBuffer = outputBuffer;
-                                }
-                            }
-                        });
-                        res.end(toClientBuffer);
-
-                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
-                            if (plugin.onResponseSent) {
-                                plugin.onResponseSent();
-                            }
-                        })
+                    funnelResponse(req, res, result, endpoint);
                 }
 
                 return true;
@@ -224,6 +187,31 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
             res.end('404');
         }
     };
+
+    const funnelResponse = (req: http.IncomingMessage, res: http.ServerResponse, result: any, endpoint: any): void => {
+        let toClientBuffer = stringifyResponse(result, endpoint.produces ?? 'text/html');
+
+        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+            if (plugin.onBeforeResponse) {
+                const { outputBuffer } = plugin.onBeforeResponse({
+                    request: req, 
+                    response: res,
+                    outputBuffer: toClientBuffer
+                });
+
+                if (toClientBuffer != outputBuffer) {
+                    toClientBuffer = outputBuffer;
+                }
+            }
+        });
+        res.end(typeof toClientBuffer === 'object' ? toClientBuffer!.toString() : toClientBuffer);
+
+        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+            if (plugin.onResponseSent) {
+                plugin.onResponseSent();
+            }
+        })
+    }
 
     /**
      * Handles HTTP requests.
