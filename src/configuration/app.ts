@@ -6,6 +6,7 @@ import { Memory } from '../framework/memory';
 import { RouteMatchResult, routeMatches } from '../framework/routing';
 import { stringifyResponse } from '../framework/serialize';
 import { parse } from '../framework/parsers';
+import { AnodizedPlugin } from '../exports';
 
 /**
  * Type representing the runtime environment.
@@ -24,7 +25,8 @@ export type ApplicationContextParameter = {
     runtimeType: RuntimeType;
     onServerInitialised?: Function;
     onTypescriptReady?: Function;
-    verbose?: boolean
+    verbose?: boolean;
+    plugins?: AnodizedPlugin[]
 };
 
 /**
@@ -82,6 +84,13 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
      * @param {string} body - Request body.
      */
     const handler = async (req: http.IncomingMessage, res: http.ServerResponse, body: string): Promise<void> => {
+
+        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+            if (plugin.onRequest) {
+                plugin.onRequest(req);
+            }
+        });
+
         const endpoints: any[] = memory.get('endpoints');
         let handled = false;
 
@@ -122,13 +131,57 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
 
                 if (result instanceof Promise) {
                     result.then((response: any) => {
-                        res.end(stringifyResponse(response, endpoint.produces ?? 'text/html'));
+
+                        let toClientBuffer = stringifyResponse(response, endpoint.produces ?? 'text/html');
+
+                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+                            if (plugin.onBeforeResponse) {
+                                const { outputBuffer } = plugin.onBeforeResponse({
+                                    request: req, 
+                                    response: res,
+                                    outputBuffer: toClientBuffer
+                                });
+
+                                if (toClientBuffer != outputBuffer) {
+                                    toClientBuffer = outputBuffer;
+                                }
+                            }
+                        });
+
+                        res.end(toClientBuffer);
+
+                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+                            if (plugin.onResponseSent) {
+                                plugin.onResponseSent();
+                            }
+                        })
                     })
                     .catch((reason: unknown) => {
                         res.end('<h2>Internal server error</h2>');
                     });
                 } else {
-                    res.end(stringifyResponse(result, endpoint.produces ?? 'text/html'));
+                        let toClientBuffer = stringifyResponse(result, endpoint.produces ?? 'text/html');
+
+                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+                            if (plugin.onBeforeResponse) {
+                                const { outputBuffer } = plugin.onBeforeResponse({
+                                    request: req, 
+                                    response: res,
+                                    outputBuffer: toClientBuffer
+                                });
+
+                                if (toClientBuffer != outputBuffer) {
+                                    toClientBuffer = outputBuffer;
+                                }
+                            }
+                        });
+                        res.end(toClientBuffer);
+
+                        appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
+                            if (plugin.onResponseSent) {
+                                plugin.onResponseSent();
+                            }
+                        })
                 }
 
                 return true;
