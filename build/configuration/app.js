@@ -132,11 +132,17 @@ export function AnodizedApp(appContext) {
                     }
                     handler = function (req, res, body) { return __awaiter(_this, void 0, void 0, function () {
                         var endpoints, handled;
-                        return __generator(this, function (_a) {
+                        var _a;
+                        return __generator(this, function (_b) {
+                            (_a = appContext.plugins) === null || _a === void 0 ? void 0 : _a.forEach(function (plugin) {
+                                if (plugin.onRequest) {
+                                    plugin.onRequest(req);
+                                }
+                            });
                             endpoints = memory.get('endpoints');
                             handled = false;
                             endpoints.some(function (endpoint) {
-                                var _a, _b;
+                                var _a, _b, _c, _d;
                                 var matchResult = routeMatches(endpoint.path, req.url);
                                 if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
                                     handled = true;
@@ -158,15 +164,51 @@ export function AnodizedApp(appContext) {
                                     res.setHeader('Content-Type', (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
                                     if (result instanceof Promise) {
                                         result.then(function (response) {
-                                            var _a;
-                                            res.end(stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html'));
+                                            var _a, _b, _c;
+                                            var toClientBuffer = stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
+                                            (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
+                                                if (plugin.onBeforeResponse) {
+                                                    var outputBuffer = plugin.onBeforeResponse({
+                                                        request: req,
+                                                        response: res,
+                                                        outputBuffer: toClientBuffer
+                                                    }).outputBuffer;
+                                                    if (toClientBuffer != outputBuffer) {
+                                                        toClientBuffer = outputBuffer;
+                                                    }
+                                                }
+                                            });
+                                            res.end(toClientBuffer);
+                                            (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
+                                                if (plugin.onResponseSent) {
+                                                    plugin.onResponseSent();
+                                                }
+                                            });
                                         })
                                             .catch(function (reason) {
                                             res.end('<h2>Internal server error</h2>');
                                         });
                                     }
                                     else {
-                                        res.end(stringifyResponse(result, (_b = endpoint.produces) !== null && _b !== void 0 ? _b : 'text/html'));
+                                        var toClientBuffer_1 = stringifyResponse(result, (_b = endpoint.produces) !== null && _b !== void 0 ? _b : 'text/html');
+                                        (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
+                                            if (plugin.onBeforeResponse) {
+                                                var outputBuffer = plugin.onBeforeResponse({
+                                                    request: req,
+                                                    response: res,
+                                                    outputBuffer: toClientBuffer_1
+                                                }).outputBuffer;
+                                                if (toClientBuffer_1 != outputBuffer) {
+                                                    toClientBuffer_1 = outputBuffer;
+                                                }
+                                            }
+                                        });
+                                        res.end(toClientBuffer_1);
+                                        (_d = appContext.plugins) === null || _d === void 0 ? void 0 : _d.forEach(function (plugin) {
+                                            if (plugin.onResponseSent) {
+                                                plugin.onResponseSent();
+                                            }
+                                        });
                                     }
                                     return true;
                                 }
