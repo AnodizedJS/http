@@ -4,3 +4,4 @@ export * from './decorators/controller';
 export * from './decorators/security';
 export * from './types/mime';
 export * from './extension/plugin';
+export * from './types/logging';

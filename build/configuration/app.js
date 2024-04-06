@@ -68,6 +68,8 @@ import { Memory } from '../framework/memory';
 import { routeMatches } from '../framework/routing';
 import { stringifyResponse } from '../framework/serialize';
 import { parse } from '../framework/parsers';
+import { serveStatic } from '../framework/static';
+import { extname } from 'path';
 /**
  * Initializes the Anodized application.
  * @param {ApplicationContextParameter} appContext - Application context parameters.
@@ -86,6 +88,10 @@ export function AnodizedApp(appContext) {
                     if (!existsSync(appContext.sourceDirectory)) {
                         throw new ApplicationContextError("AppContext({ sourceDirectory: '".concat(appContext.sourceDirectory, "' }) the sourceDirectory doesn't exist"));
                     }
+                    if (!appContext.logger) {
+                        // default to the console
+                        appContext.logger = __assign(__assign({}, console), { exception: console.error });
+                    }
                     memory = Memory.getInstance();
                     memory.put('endpoints', []);
                     memory.put('controllers', []);
@@ -97,7 +103,7 @@ export function AnodizedApp(appContext) {
                     if (!(_i < tsFiles_1.length)) return [3 /*break*/, 4];
                     file = tsFiles_1[_i];
                     if (appContext.verbose) {
-                        console.log("[LOAD (ts)] ".concat(file));
+                        appContext.logger.log("[LOAD (ts)] ".concat(file));
                     }
                     return [4 /*yield*/, import("".concat(process.cwd(), "/").concat(file))];
                 case 2:
@@ -113,7 +119,7 @@ export function AnodizedApp(appContext) {
                     if (!(_a < tsxFiles_1.length)) return [3 /*break*/, 8];
                     file = tsxFiles_1[_a];
                     if (appContext.verbose) {
-                        console.log("[LOAD (tsx)] ".concat(file));
+                        appContext.logger.log("[LOAD (tsx)] ".concat(file));
                     }
                     return [4 /*yield*/, import("".concat(process.cwd(), "/").concat(file))];
                 case 6:
@@ -124,103 +130,129 @@ export function AnodizedApp(appContext) {
                     return [3 /*break*/, 5];
                 case 8:
                     if (appContext.verbose) {
-                        console.log("[LOAD] Complete");
+                        appContext.logger.log("[LOAD] Complete");
                     }
                     if (appContext.onTypescriptReady) {
                         // allow hooks in lifecycles.
                         appContext.onTypescriptReady();
                     }
                     handler = function (req, res, body) { return __awaiter(_this, void 0, void 0, function () {
-                        var endpoints, handled;
-                        var _a;
-                        return __generator(this, function (_b) {
-                            (_a = appContext.plugins) === null || _a === void 0 ? void 0 : _a.forEach(function (plugin) {
-                                if (plugin.onRequest) {
-                                    plugin.onRequest(req);
-                                }
-                            });
-                            endpoints = memory.get('endpoints');
-                            handled = false;
-                            endpoints.some(function (endpoint) {
-                                var _a, _b, _c, _d;
-                                var matchResult = routeMatches(endpoint.path, req.url);
-                                if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
-                                    handled = true;
-                                    var classDefinition_1 = endpoint.class;
-                                    var classMethod = endpoint.classMethod, consumes = endpoint.consumes;
-                                    var controller = memory.get('controllers').find(function (instanceMap) { return instanceMap.constructor === classDefinition_1; });
-                                    var data = parse(body, consumes !== null && consumes !== void 0 ? consumes : 'text/plain');
-                                    var context = __assign(__assign(__assign({}, matchResult.urlParameters), data), { response: res, request: req });
-                                    if (!controller) {
-                                        res.writeHead(500, {
-                                            'Content-Type': 'text/html'
-                                        });
-                                        console.error('The annotation that declares endpoints has been passed a class that isn\'t a controller, please add the @Controller decorator to that class to prevent this error');
-                                        res.end('Internal server error');
-                                        return true;
+                        var _i, _a, dir, file, endpoints, handled;
+                        var _b;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0:
+                                    if (!appContext.publicDirectories) return [3 /*break*/, 4];
+                                    _i = 0, _a = appContext.publicDirectories;
+                                    _c.label = 1;
+                                case 1:
+                                    if (!(_i < _a.length)) return [3 /*break*/, 4];
+                                    dir = _a[_i];
+                                    file = "".concat(dir, "/").concat(req.url.split('?')[0]);
+                                    if (!existsSync(file)) return [3 /*break*/, 3];
+                                    // is a static file, whoo!
+                                    return [4 /*yield*/, serveStatic(res, file)];
+                                case 2:
+                                    // is a static file, whoo!
+                                    _c.sent();
+                                    if (!res.writableEnded) {
+                                        appContext.logger.log("File of type ".concat(extname(file), " isn't being served correctly"));
+                                        res.end();
                                     }
-                                    var instance = controller.instance;
-                                    var result = instance[classMethod](context);
-                                    res.setHeader('Content-Type', (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
-                                    if (result instanceof Promise) {
-                                        result.then(function (response) {
-                                            var _a, _b, _c;
-                                            var toClientBuffer = stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
-                                            (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
-                                                if (plugin.onBeforeResponse) {
-                                                    var outputBuffer = plugin.onBeforeResponse({
-                                                        request: req,
-                                                        response: res,
-                                                        outputBuffer: toClientBuffer
-                                                    }).outputBuffer;
-                                                    if (toClientBuffer != outputBuffer) {
-                                                        toClientBuffer = outputBuffer;
+                                    return [2 /*return*/];
+                                case 3:
+                                    _i++;
+                                    return [3 /*break*/, 1];
+                                case 4:
+                                    (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
+                                        if (plugin.onRequest) {
+                                            plugin.onRequest(req);
+                                        }
+                                    });
+                                    endpoints = memory.get('endpoints');
+                                    handled = false;
+                                    endpoints.some(function (endpoint) {
+                                        var _a, _b, _c, _d;
+                                        var matchResult = routeMatches(endpoint.path, req.url);
+                                        if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
+                                            handled = true;
+                                            var classDefinition_1 = endpoint.class;
+                                            var classMethod = endpoint.classMethod, consumes = endpoint.consumes;
+                                            var controller = memory.get('controllers').find(function (instanceMap) { return instanceMap.constructor === classDefinition_1; });
+                                            var data = parse(body, consumes !== null && consumes !== void 0 ? consumes : 'text/plain');
+                                            var context = __assign(__assign(__assign({}, matchResult.urlParameters), data), { response: res, request: req });
+                                            if (!controller) {
+                                                res.writeHead(500, {
+                                                    'Content-Type': 'text/html'
+                                                });
+                                                appContext.logger.error('The annotation that declares endpoints has been passed a class that isn\'t a controller, please add the @Controller decorator to that class to prevent this error');
+                                                res.end('Internal server error');
+                                                return true;
+                                            }
+                                            var instance = controller.instance;
+                                            var result = instance[classMethod](context);
+                                            res.setHeader('Content-Type', (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
+                                            if (result instanceof Promise) {
+                                                result.then(function (response) {
+                                                    var _a, _b, _c;
+                                                    var toClientBuffer = stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html');
+                                                    (_b = appContext.plugins) === null || _b === void 0 ? void 0 : _b.forEach(function (plugin) {
+                                                        if (plugin.onBeforeResponse) {
+                                                            var outputBuffer = plugin.onBeforeResponse({
+                                                                request: req,
+                                                                response: res,
+                                                                outputBuffer: toClientBuffer
+                                                            }).outputBuffer;
+                                                            if (toClientBuffer != outputBuffer) {
+                                                                toClientBuffer = outputBuffer;
+                                                            }
+                                                        }
+                                                    });
+                                                    res.end(toClientBuffer);
+                                                    (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
+                                                        if (plugin.onResponseSent) {
+                                                            plugin.onResponseSent();
+                                                        }
+                                                    });
+                                                })
+                                                    .catch(function (reason) {
+                                                    appContext.logger.error(reason);
+                                                    res.end('<h2>Internal server error</h2>');
+                                                });
+                                            }
+                                            else {
+                                                var toClientBuffer_1 = stringifyResponse(result, (_b = endpoint.produces) !== null && _b !== void 0 ? _b : 'text/html');
+                                                (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
+                                                    if (plugin.onBeforeResponse) {
+                                                        var outputBuffer = plugin.onBeforeResponse({
+                                                            request: req,
+                                                            response: res,
+                                                            outputBuffer: toClientBuffer_1
+                                                        }).outputBuffer;
+                                                        if (toClientBuffer_1 != outputBuffer) {
+                                                            toClientBuffer_1 = outputBuffer;
+                                                        }
                                                     }
-                                                }
-                                            });
-                                            res.end(toClientBuffer);
-                                            (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
-                                                if (plugin.onResponseSent) {
-                                                    plugin.onResponseSent();
-                                                }
-                                            });
-                                        })
-                                            .catch(function (reason) {
-                                            res.end('<h2>Internal server error</h2>');
-                                        });
-                                    }
-                                    else {
-                                        var toClientBuffer_1 = stringifyResponse(result, (_b = endpoint.produces) !== null && _b !== void 0 ? _b : 'text/html');
-                                        (_c = appContext.plugins) === null || _c === void 0 ? void 0 : _c.forEach(function (plugin) {
-                                            if (plugin.onBeforeResponse) {
-                                                var outputBuffer = plugin.onBeforeResponse({
-                                                    request: req,
-                                                    response: res,
-                                                    outputBuffer: toClientBuffer_1
-                                                }).outputBuffer;
-                                                if (toClientBuffer_1 != outputBuffer) {
-                                                    toClientBuffer_1 = outputBuffer;
-                                                }
+                                                });
+                                                res.end(toClientBuffer_1);
+                                                (_d = appContext.plugins) === null || _d === void 0 ? void 0 : _d.forEach(function (plugin) {
+                                                    if (plugin.onResponseSent) {
+                                                        plugin.onResponseSent();
+                                                    }
+                                                });
                                             }
-                                        });
-                                        res.end(toClientBuffer_1);
-                                        (_d = appContext.plugins) === null || _d === void 0 ? void 0 : _d.forEach(function (plugin) {
-                                            if (plugin.onResponseSent) {
-                                                plugin.onResponseSent();
-                                            }
-                                        });
+                                            return true;
+                                        }
+                                        else {
+                                            return false;
+                                        }
+                                    });
+                                    if (!handled) {
+                                        res.writeHead(404);
+                                        res.end('404');
                                     }
-                                    return true;
-                                }
-                                else {
-                                    return false;
-                                }
-                            });
-                            if (!handled) {
-                                res.writeHead(404);
-                                res.end('404');
+                                    return [2 /*return*/];
                             }
-                            return [2 /*return*/];
                         });
                     }); };
                     handleHttpRequest = function (req, res) {

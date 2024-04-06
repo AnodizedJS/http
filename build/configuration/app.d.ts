@@ -1,4 +1,5 @@
 import { AnodizedPlugin } from '../exports';
+import { Logger } from '../types/logging';
 /**
  * Type representing the runtime environment.
  */
@@ -17,6 +18,8 @@ export type ApplicationContextParameter = {
     onTypescriptReady?: Function;
     verbose?: boolean;
     plugins?: AnodizedPlugin[];
+    publicDirectories?: string[];
+    logger: Logger;
 };
 /**
  * Initializes the Anodized application.
