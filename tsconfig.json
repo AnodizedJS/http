@@ -8,6 +8,7 @@
         "allowJs": true,
         "experimentalDecorators": true,
         "esModuleInterop": true,
+        "lib": ["DOM"],
         "paths": {
             "*": ["./node_modules/"]
         }
