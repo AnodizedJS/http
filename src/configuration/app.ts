@@ -1,7 +1,7 @@
 import * as http from 'http';
 import * as https from 'https';
 import { readFileSync, existsSync } from 'fs';
-import { getTsFiles } from '../framework/utilities';
+import { getTsFiles, getTsxFiles } from '../framework/utilities';
 import { Memory } from '../framework/memory';
 import { RouteMatchResult, routeMatches } from '../framework/routing';
 import { stringifyResponse } from '../framework/serialize';
@@ -46,12 +46,21 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
     memory.put('controllers', []);
 
     // Load TypeScript files.
-    const tsFiles: string[] = getTsFiles(appContext.sourceDirectory);    
+    const tsFiles: string[] = getTsFiles(appContext.sourceDirectory);  
+    const tsxFiles: string[] = getTsxFiles(appContext.sourceDirectory);  
 
     for (const file of tsFiles) {
 
         if (appContext.verbose) {
-            console.log(`[LOAD] ${file}`);
+            console.log(`[LOAD (ts)] ${file}`);
+        }
+
+        await import(`${process.cwd()}/${file}`);
+    }
+    for (const file of tsxFiles) {
+
+        if (appContext.verbose) {
+            console.log(`[LOAD (tsx)] ${file}`);
         }
 
         await import(`${process.cwd()}/${file}`);
