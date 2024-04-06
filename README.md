@@ -16,7 +16,21 @@ import { AnodizedApp } from '@anodized/http';
 AnodizedApp({
     httpPort: 8080,
     sourceDirectory: 'src/',
-    runtimeType: 'node' // this is future-proofing for use in serverless environments such as AWS lambda.
+    runtimeType: 'node', // this is future-proofing for use in serverless environments such as AWS lambda.
+    // optional extras,
+    logger: {
+        log: (value: string) => {},
+        warn: (value: string) => {}
+        error: (value: string) => {}
+        exception: (value: string) => {}
+    },
+    plugins: [
+        // lookup @anodized/tsx
+    ],
+    publicDirectories: [
+        'public/'
+    ],
+    verbose: false, // defaults to false.
 })
 ```
 Now all your TypeScript components will be loaded fron the source directory. Next, create a controller, in lets say `src/controllers/homepage.ts`

@@ -7,6 +7,9 @@ import { RouteMatchResult, routeMatches } from '../framework/routing';
 import { stringifyResponse } from '../framework/serialize';
 import { parse } from '../framework/parsers';
 import { AnodizedPlugin } from '../exports';
+import { serveStatic } from '../framework/static';
+import { extname } from 'path';
+import { Logger } from '../types/logging';
 
 /**
  * Type representing the runtime environment.
@@ -26,7 +29,9 @@ export type ApplicationContextParameter = {
     onServerInitialised?: Function;
     onTypescriptReady?: Function;
     verbose?: boolean;
-    plugins?: AnodizedPlugin[]
+    plugins?: AnodizedPlugin[];
+    publicDirectories?: string[]; // apps can be served from here.
+    logger: Logger;
 };
 
 /**
@@ -43,6 +48,11 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
         throw new ApplicationContextError(`AppContext({ sourceDirectory: '${appContext.sourceDirectory}' }) the sourceDirectory doesn't exist`);
     }
 
+    if (!appContext.logger) {
+        // default to the console
+        appContext.logger = { ...console, exception: console.error };
+    }
+
     const memory: Memory = Memory.getInstance();
     memory.put('endpoints', []);
     memory.put('controllers', []);
@@ -54,7 +64,7 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
     for (const file of tsFiles) {
 
         if (appContext.verbose) {
-            console.log(`[LOAD (ts)] ${file}`);
+            appContext.logger.log(`[LOAD (ts)] ${file}`);
         }
 
         await import(`${process.cwd()}/${file}`);
@@ -62,14 +72,14 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
     for (const file of tsxFiles) {
 
         if (appContext.verbose) {
-            console.log(`[LOAD (tsx)] ${file}`);
+            appContext.logger.log(`[LOAD (tsx)] ${file}`);
         }
 
         await import(`${process.cwd()}/${file}`);
     }
 
     if (appContext.verbose) {
-        console.log(`[LOAD] Complete`);
+        appContext.logger.log(`[LOAD] Complete`);
     }
 
     if (appContext.onTypescriptReady) {
@@ -84,6 +94,24 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
      * @param {string} body - Request body.
      */
     const handler = async (req: http.IncomingMessage, res: http.ServerResponse, body: string): Promise<void> => {
+
+        if (appContext.publicDirectories) 
+        {
+            for(let dir of appContext.publicDirectories) {
+                const file: string = `${dir}/${req.url.split('?')[0]}`;
+                if (existsSync(file)) {
+                    // is a static file, whoo!
+
+                    await serveStatic(res, file);
+
+                    if (!res.writableEnded) {
+                        appContext.logger.log(`File of type ${extname(file)} isn't being served correctly`);
+                        res.end();
+                    }
+                    return;
+                }
+            }
+        }
 
         appContext.plugins?.forEach((plugin: AnodizedPlugin) => {
             if (plugin.onRequest) {
@@ -119,7 +147,7 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
                     res.writeHead(500, {
                         'Content-Type': 'text/html'
                     });
-                    console.error('The annotation that declares endpoints has been passed a class that isn\'t a controller, please add the @Controller decorator to that class to prevent this error');
+                    appContext.logger.error('The annotation that declares endpoints has been passed a class that isn\'t a controller, please add the @Controller decorator to that class to prevent this error');
                     res.end('Internal server error');
                     return true;
                 }
@@ -157,6 +185,7 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
                         })
                     })
                     .catch((reason: unknown) => {
+                        appContext.logger.error(reason)
                         res.end('<h2>Internal server error</h2>');
                     });
                 } else {
