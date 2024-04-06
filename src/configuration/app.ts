@@ -46,7 +46,8 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
     memory.put('controllers', []);
 
     // Load TypeScript files.
-    const tsFiles: string[] = getTsFiles(appContext.sourceDirectory);
+    const tsFiles: string[] = getTsFiles(appContext.sourceDirectory);    
+
     for (const file of tsFiles) {
 
         if (appContext.verbose) {
