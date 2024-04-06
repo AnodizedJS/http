@@ -62,12 +62,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import * as http from 'http';
 import * as https from 'https';
-import { readFileSync } from 'fs';
-import { existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { getTsFiles } from '../framework/utilities';
 import { Memory } from '../framework/memory';
 import { routeMatches } from '../framework/routing';
-import { stringifyResponse } from '../framework/response';
+import { stringifyResponse } from '../framework/serialize';
+import { parse } from '../framework/parsers';
+/**
+ * Initializes the Anodized application.
+ * @param {ApplicationContextParameter} appContext - Application context parameters.
+ */
 export function AnodizedApp(appContext) {
     return __awaiter(this, void 0, void 0, function () {
         var memory, tsFiles, _i, tsFiles_1, file, handler, handleHttpRequest, nonSecureListener, secureListener;
@@ -75,8 +79,7 @@ export function AnodizedApp(appContext) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    // first, load the application.
-                    // make sure the sourceDirectory is valid and exists
+                    // Load the application and check if sourceDirectory is valid and exists.
                     if (appContext.sourceDirectory.length === 0) {
                         throw new ApplicationContextError('AppContext({ sourceDirectory }) cannot be empty');
                     }
@@ -84,7 +87,6 @@ export function AnodizedApp(appContext) {
                         throw new ApplicationContextError("AppContext({ sourceDirectory: '".concat(appContext.sourceDirectory, "' }) the sourceDirectory doesn't exist"));
                     }
                     memory = Memory.getInstance();
-                    // this is populated from @Get, @Post etc... decorated functions.
                     memory.put('endpoints', []);
                     memory.put('controllers', []);
                     tsFiles = getTsFiles(appContext.sourceDirectory);
@@ -93,14 +95,24 @@ export function AnodizedApp(appContext) {
                 case 1:
                     if (!(_i < tsFiles_1.length)) return [3 /*break*/, 4];
                     file = tsFiles_1[_i];
+                    if (appContext.verbose) {
+                        console.log("[LOAD] ".concat(file));
+                    }
                     return [4 /*yield*/, import("".concat(process.cwd(), "/").concat(file))];
                 case 2:
-                    _a.sent(); // 
+                    _a.sent();
                     _a.label = 3;
                 case 3:
                     _i++;
                     return [3 /*break*/, 1];
                 case 4:
+                    if (appContext.verbose) {
+                        console.log("[LOAD] Complete");
+                    }
+                    if (appContext.onTypescriptReady) {
+                        // allow hooks in lifecycles.
+                        appContext.onTypescriptReady();
+                    }
                     handler = function (req, res, body) { return __awaiter(_this, void 0, void 0, function () {
                         var endpoints, handled;
                         return __generator(this, function (_a) {
@@ -111,11 +123,11 @@ export function AnodizedApp(appContext) {
                                 var matchResult = routeMatches(endpoint.path, req.url);
                                 if (endpoint.method === req.method.toUpperCase() && matchResult.isMatch) {
                                     handled = true;
-                                    // get the required properties for that endpoint.
                                     var classDefinition_1 = endpoint.class;
-                                    var classMethod = endpoint.classMethod, produces = endpoint.produces, consumes = endpoint.consumes;
+                                    var classMethod = endpoint.classMethod, consumes = endpoint.consumes;
                                     var controller = memory.get('controllers').find(function (instanceMap) { return instanceMap.constructor === classDefinition_1; });
-                                    var context = __assign({ response: res, request: req }, matchResult.urlParameters);
+                                    var data = parse(body, consumes !== null && consumes !== void 0 ? consumes : 'text/plain');
+                                    var context = __assign(__assign(__assign({}, matchResult.urlParameters), data), { response: res, request: req });
                                     if (!controller) {
                                         res.writeHead(500, {
                                             'Content-Type': 'text/html'
@@ -133,7 +145,6 @@ export function AnodizedApp(appContext) {
                                             res.end(stringifyResponse(response, (_a = endpoint.produces) !== null && _a !== void 0 ? _a : 'text/html'));
                                         })
                                             .catch(function (reason) {
-                                            // TODO: Add a good dev mode error handler here
                                             res.end('<h2>Internal server error</h2>');
                                         });
                                     }
@@ -147,7 +158,7 @@ export function AnodizedApp(appContext) {
                                 }
                             });
                             if (!handled) {
-                                res.writeHead(404, {});
+                                res.writeHead(404);
                                 res.end('404');
                             }
                             return [2 /*return*/];
@@ -155,8 +166,6 @@ export function AnodizedApp(appContext) {
                     }); };
                     handleHttpRequest = function (req, res) {
                         if (!req.method) {
-                            // if non http connections are established, don't process them. Requesting certain properties
-                            // could crash the server, this could in turn be used as a form of attack on a website.
                             res.end();
                             return;
                         }
@@ -182,16 +191,16 @@ export function AnodizedApp(appContext) {
                             key: readFileSync(appContext.key)
                         }, handleHttpRequest);
                         secureListener.listen(appContext.httpsPort);
-                        if (appContext.onServerReady) {
-                            appContext.onServerReady({
+                        if (appContext.onServerInitialised) {
+                            appContext.onServerInitialised({
                                 http: nonSecureListener,
                                 https: secureListener
                             });
                         }
                     }
                     else {
-                        if (appContext.onServerReady) {
-                            appContext.onServerReady({
+                        if (appContext.onServerInitialised) {
+                            appContext.onServerInitialised({
                                 http: nonSecureListener
                             });
                         }
@@ -201,6 +210,9 @@ export function AnodizedApp(appContext) {
         });
     });
 }
+/**
+ * Custom error class for ApplicationContext errors.
+ */
 var ApplicationContextError = /** @class */ (function (_super) {
     __extends(ApplicationContextError, _super);
     function ApplicationContextError() {

@@ -35,29 +35,160 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 import { AnodizedApp } from '../../src/configuration/app';
-import axios from 'axios';
-describe('Controller tests', function () {
-    AnodizedApp({
-        httpPort: 8080,
-        sourceDirectory: 'example',
-        runtimeType: 'node',
-        onServerReady: function (_a) {
-            var http = _a.http, https = _a.https;
-            it('Request valid URL with correct request method', function () { return __awaiter(void 0, void 0, void 0, function () {
-                var resp;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, axios({
-                                url: 'http://localhost:8080/'
-                            })];
-                        case 1:
-                            resp = _a.sent();
-                            expect(resp.status).toEqual(200);
-                            expect(resp.data).toEqual('<h1>Hello world</h1>');
-                            return [2 /*return*/];
+import axios, { AxiosError } from 'axios';
+AnodizedApp({
+    httpPort: 8080,
+    sourceDirectory: 'example',
+    runtimeType: 'node',
+    onServerInitialised: function (_a) {
+        var http = _a.http;
+        testsComplete().then(function () {
+            http.close();
+        });
+    }
+});
+var completeTests = 0;
+var totalTests = 0;
+var testsComplete = function () { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        return [2 /*return*/, new Promise(function (resolve) {
+                var itvl = setInterval(function () {
+                    if (totalTests === completeTests) {
+                        clearInterval(itvl);
+                        resolve();
                     }
-                });
-            }); });
-        }
+                }, 50);
+            })];
     });
+}); };
+describe('Controller tests', function () {
+    it('Request valid URL with correct request method', function () { return __awaiter(void 0, void 0, void 0, function () {
+        var resp, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    totalTests++;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, axios({
+                            url: 'http://localhost:8080/'
+                        })];
+                case 2:
+                    resp = _a.sent();
+                    expect(resp.status).toEqual(200);
+                    expect(resp.data).toEqual('<h1>Hello world</h1>');
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_1 = _a.sent();
+                    console.log(e_1);
+                    fail();
+                    return [3 /*break*/, 4];
+                case 4:
+                    completeTests++;
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it('Request valid URL with incorrect request method that returns 404', function () { return __awaiter(void 0, void 0, void 0, function () {
+        var resp, e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    totalTests++;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, axios({
+                            url: 'http://localhost:8080/',
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            data: JSON.stringify({})
+                        })];
+                case 2:
+                    resp = _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_2 = _a.sent();
+                    if (e_2 instanceof AxiosError) {
+                        expect(e_2.response.status).toEqual(404);
+                    }
+                    else {
+                        fail();
+                    }
+                    return [3 /*break*/, 4];
+                case 4:
+                    completeTests++;
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it('Request valid URL with request method that returns JSON', function () { return __awaiter(void 0, void 0, void 0, function () {
+        var resp, e_3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    totalTests++;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, axios({
+                            url: 'http://localhost:8080/test',
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            data: JSON.stringify({})
+                        })];
+                case 2:
+                    resp = _a.sent();
+                    expect(resp.status).toEqual(200);
+                    expect(resp.data.success).toBeTruthy();
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_3 = _a.sent();
+                    fail();
+                    return [3 /*break*/, 4];
+                case 4:
+                    completeTests++;
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it('Endpoint context building works', function () { return __awaiter(void 0, void 0, void 0, function () {
+        var resp, e_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    totalTests++;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, axios({
+                            url: 'http://localhost:8080/name',
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            data: JSON.stringify({
+                                name: 'John Hudson'
+                            })
+                        })];
+                case 2:
+                    resp = _a.sent();
+                    expect(resp.status).toEqual(200);
+                    expect(resp.data.data.message).toEqual('Your name is John Hudson');
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_4 = _a.sent();
+                    fail();
+                    return [3 /*break*/, 4];
+                case 4:
+                    completeTests++;
+                    return [2 /*return*/];
+            }
+        });
+    }); });
 });

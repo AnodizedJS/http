@@ -24,7 +24,7 @@ export type ApplicationContextParameter = {
     runtimeType: RuntimeType;
     onServerInitialised?: Function;
     onTypescriptReady?: Function;
-
+    verbose?: boolean
 };
 
 /**
@@ -48,7 +48,16 @@ export async function AnodizedApp(appContext: ApplicationContextParameter): Prom
     // Load TypeScript files.
     const tsFiles: string[] = getTsFiles(appContext.sourceDirectory);
     for (const file of tsFiles) {
+
+        if (appContext.verbose) {
+            console.log(`[LOAD] ${file}`);
+        }
+
         await import(`${process.cwd()}/${file}`);
+    }
+
+    if (appContext.verbose) {
+        console.log(`[LOAD] Complete`);
     }
 
     if (appContext.onTypescriptReady) {

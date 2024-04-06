@@ -66,7 +66,7 @@ describe('HTTP Server Tests', function () {
                         httpPort: 8080,
                         sourceDirectory: 'example',
                         runtimeType: 'node',
-                        onServerReady: function (_a) {
+                        onServerInitialised: function (_a) {
                             var http = _a.http, https = _a.https;
                             expect(http).not.toEqual(null);
                             expect(https).toBeFalsy();
@@ -91,7 +91,7 @@ describe('HTTP Server Tests', function () {
                             httpsPort: 8081,
                             sourceDirectory: 'example',
                             runtimeType: 'node',
-                            onServerReady: function (_a) {
+                            onServerInitialised: function (_a) {
                                 var http = _a.http, https = _a.https;
                                 http.close();
                                 https === null || https === void 0 ? void 0 : https.close();
@@ -119,7 +119,7 @@ describe('HTTP Server Tests', function () {
                         runtimeType: 'node',
                         certificate: 'example/localhost.crt',
                         key: 'example/localhost.key',
-                        onServerReady: function (_a) {
+                        onServerInitialised: function (_a) {
                             var http = _a.http, https = _a.https;
                             http.close();
                             expect(https).not.toBeFalsy();

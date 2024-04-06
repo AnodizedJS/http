@@ -34,19 +34,35 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+/**
+ * Abstract class representing a security authorizer.
+ */
 var SecurityAuthorizer = /** @class */ (function () {
     function SecurityAuthorizer() {
     }
+    /**
+     * Generates an error response HTML, this can be overriden to output JSON for instance.
+     * @param {string} code - The error code.
+     * @param {string} message - The error message.
+     * @returns {string} The error response HTML.
+     */
     SecurityAuthorizer.prototype.errorResponse = function (code, message) {
         return "<h1>Error ".concat(code, "</h1><p>").concat(message, "</p>");
     };
     return SecurityAuthorizer;
 }());
 export { SecurityAuthorizer };
+/**
+ * Decorator factory for performing authorization checks before method execution.
+ * @param {typeof SecurityAuthorizer} authorizer - The security authorizer class.
+ * @param {string} [requiredPermission] - The required permission for the method.
+ * @returns {Function} Decorator function.
+ */
 export var PreAuthorize = function (authorizer, requiredPermission) {
     return function (target, key, descriptor) {
+        // Initialize authorizer if not already initialized
         if (!target.authorizer) {
-            // @ts-ignore
+            // @ts-ignore: Initializing authorizer dynamically
             target.authorizer = new authorizer();
         }
         var original = descriptor.value;
@@ -62,23 +78,26 @@ export var PreAuthorize = function (authorizer, requiredPermission) {
                         case 0:
                             params = args[0];
                             response = params.response;
-                            return [4 /*yield*/, target.authorizer.isLoggedIn()];
+                            return [4 /*yield*/, target.authorizer.isLoggedIn(params.headers)];
                         case 1:
+                            // Check if user is logged in
                             if (!(_a.sent())) {
                                 response.statusCode = 302;
                                 response.setHeader('Location', target.authorizer.getLoginUrl());
-                                return [2 /*return*/, target.authorizer.errorResponse(1, 'You are not logged in')];
+                                return [2 /*return*/, target.authorizer.errorResponse('1', 'You are not logged in')];
                             }
-                            if (!target.authorizer.isRbacEnabled()) return [3 /*break*/, 3];
+                            if (!(target.authorizer.isRbacEnabled() && requiredPermission)) return [3 /*break*/, 3];
                             return [4 /*yield*/, target.authorizer.hasPermission(requiredPermission)];
                         case 2:
                             if (!(_a.sent())) {
                                 response.statusCode = 403;
-                                return [2 /*return*/, target.authorizer.errorResponse(2, 'You don\'t have the required permission to perform this action')];
+                                return [2 /*return*/, target.authorizer.errorResponse('2', 'You don\'t have the required permission to perform this action')];
                             }
                             _a.label = 3;
-                        case 3: return [4 /*yield*/, original.apply(void 0, args)];
-                        case 4: return [2 /*return*/, _a.sent()];
+                        case 3: return [4 /*yield*/, original.apply(this, args)];
+                        case 4: 
+                        // Execute the original method
+                        return [2 /*return*/, _a.sent()];
                     }
                 });
             });
