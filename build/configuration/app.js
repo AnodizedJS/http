@@ -62,7 +62,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import * as http from 'http';
 import * as https from 'https';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, lstatSync } from 'fs';
 import { getTsFiles, getTsxFiles } from '../framework/utilities';
 import { Memory } from '../framework/memory';
 import { routeMatches } from '../framework/routing';
@@ -149,7 +149,7 @@ export function AnodizedApp(appContext) {
                                     if (!(_i < _a.length)) return [3 /*break*/, 4];
                                     dir = _a[_i];
                                     file = "".concat(dir, "/").concat(req.url.split('?')[0]);
-                                    if (!existsSync(file)) return [3 /*break*/, 3];
+                                    if (!(existsSync(file) && !lstatSync(file).isDirectory())) return [3 /*break*/, 3];
                                     // is a static file, whoo!
                                     return [4 /*yield*/, serveStatic(res, file)];
                                 case 2:

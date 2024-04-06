@@ -1,6 +1,6 @@
 {
   "name": "@anodized/http",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "A decorator driven IoC backend framework aimed at keeping your codebase clean and reducing complexity",
   "type": "module",
   "main": "build/exports.js",
